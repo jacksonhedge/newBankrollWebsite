@@ -7,7 +7,7 @@ module.exports = {
   theme: {
     extend: {
       animation: {
-        'gradient': 'gradient 15s ease infinite',
+        'gradient': 'gradient 20s ease infinite',
       },
       keyframes: {
         gradient: {
@@ -18,6 +18,9 @@ module.exports = {
             'background-position': '100% 50%',
           },
         },
+      },
+      backgroundImage: {
+        'radial-gradient': 'radial-gradient(circle at center, var(--tw-gradient-from) 0%, var(--tw-gradient-via) 50%, var(--tw-gradient-to) 100%)',
       },
       backgroundSize: {
         '200%': '200% 200%',
