@@ -4,10 +4,10 @@
   "description": "",
   "scripts": {
     "dev": "vite",
-    "server": "nodemon server/server.js",
+    "server": "nodemon server.js",
     "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
     "build": "vite build",
-    "start": "node server/server.js",
+    "start": "node server.js",
     "preview": "vite preview"
   },
   "dependencies": {
