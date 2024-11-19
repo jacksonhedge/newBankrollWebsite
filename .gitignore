@@ -1,43 +1,25 @@
-# Dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# Testing
-/coverage
-
-# Production
-/build
+.DS_Store
+node_modules
 /dist
+/docs
 
-# Environment variables
+# local env files
 .env
 .env.local
-.env.development
-.env.test
+.env.*.local
 .env.production
 
-# Firebase
-.firebase/
-*.log
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Debug
+# Log files
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Vite
-*.local
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
