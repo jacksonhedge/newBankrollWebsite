@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import Footer from '../layout/Footer';
 import AnimatedGradient from '../components/ui/AnimatedGradient';
 import { useSleeperContext } from '../contexts/SleeperContext';
+// Import logo image
 import bankrollLogo from '../assets/Bankroll Gradient 3.jpg';
 
 const LandingPage = () => {
