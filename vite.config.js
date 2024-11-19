@@ -32,13 +32,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html')
-      },
-      output: {
-        manualChunks: undefined
       }
-    },
-    // Copy public directory to build output
-    copyPublicDir: true
+    }
   },
-  publicDir: 'public'
+  publicDir: path.resolve(__dirname, 'public')
 });
