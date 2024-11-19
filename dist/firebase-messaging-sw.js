@@ -1,5 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
   apiKey: "AIzaSyD7VNKg6Gqam8qHZiHUpzgleVYbk8Gc9qU",
@@ -7,20 +7,19 @@ firebase.initializeApp({
   projectId: "bankroll-2ccb4",
   storageBucket: "bankroll-2ccb4.firebasestorage.app",
   messagingSenderId: "443440711718",
-  appId: "1:443440711718:web:dc3f58dfe81324edc3bee7"
+  appId: "1:443440711718:web:dc3f58dfe81324edc3bee7",
+  measurementId: "G-QZ2NEGJV6D"
 });
 
 const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
-  console.log('Received background message:', payload);
-
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/images/FullLogo_NoBuffer.jpg',
-    badge: '/images/FullLogo_NoBuffer.jpg',
+    icon: '/images/BankrollLogoTransparent.png',
+    badge: '/images/BankrollLogoTransparent.png',
     data: payload.data,
     actions: [
       {
@@ -35,22 +34,41 @@ messaging.onBackgroundMessage((payload) => {
 
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
-
   event.notification.close();
+  
+  // Handle action clicks
+  if (event.action === 'open') {
+    // Open the app when the "Open App" action is clicked
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then((windowClients) => {
+        // Check if there is already a window/tab open with the target URL
+        for (let client of windowClients) {
+          if ('focus' in client) {
+            return client.focus();
+          }
+        }
+        // If no window/tab is open, open a new one
+        if (clients.openWindow) {
+          return clients.openWindow('/');
+        }
+      })
+    );
+  }
 
-  // This looks to see if the current is already open and focuses if it is
+  // Handle regular notification clicks
+  const urlToOpen = event.notification.data?.url || '/';
   event.waitUntil(
-    clients.matchAll({
-      type: "window"
-    })
-    .then((clientList) => {
-      for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client)
+    clients.matchAll({ type: 'window' }).then((windowClients) => {
+      // Check if there is already a window/tab open with the target URL
+      for (let client of windowClients) {
+        if (client.url === urlToOpen && 'focus' in client) {
           return client.focus();
+        }
       }
-      if (clients.openWindow)
-        return clients.openWindow('/');
+      // If no window/tab is open, open a new one
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
     })
   );
 });
