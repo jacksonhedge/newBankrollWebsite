@@ -28,10 +28,21 @@ export default defineConfig({
   build: {
     outDir: 'docs',
     sourcemap: true,
-    assetsDir: 'images',
+    assetsDir: 'assets',
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html')
+      },
+      output: {
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            const dirname = path.dirname(assetInfo.name);
+            return dirname === '.' ? `images/[name][extname]` : `[name][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        }
       }
     }
   },
