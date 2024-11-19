@@ -87,7 +87,7 @@ const SignUpForm = () => {
       {/* Logo */}
       <div className="w-full max-w-md px-4 mb-8">
         <img
-          src="/newBankrollWebsite/images/Bankroll Gradient 3.jpg"
+          src="/newBankrollWebsite/assets/Bankroll%20Gradient%203.jpg"
           alt="Bankroll"
           className="h-20 w-auto mx-auto"
         />
