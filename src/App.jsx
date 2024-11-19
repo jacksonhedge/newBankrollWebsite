@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { SleeperProvider } from './contexts/SleeperContext';
 import ProtectedLayout from './layout/ProtectedLayout';
@@ -50,6 +50,7 @@ function App() {
 
             {/* Protected routes */}
             <Route element={<ProtectedLayout />}>
+              <Route index element={<Navigate to="/spend" replace />} />
               <Route path="/banking" element={<BankingView />} />
               <Route path="/leagues" element={<MyLeagues />} />
               <Route path="/send" element={<SendMoney />} />
