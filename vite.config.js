@@ -12,8 +12,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: true, // Listen on all addresses
-    strictPort: true, // Fail if port is in use
+    host: true,
+    strictPort: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
@@ -28,10 +28,17 @@ export default defineConfig({
   build: {
     outDir: 'docs',
     sourcemap: true,
+    assetsDir: 'assets',
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html')
+      },
+      output: {
+        manualChunks: undefined
       }
-    }
-  }
+    },
+    // Copy public directory to build output
+    copyPublicDir: true
+  },
+  publicDir: 'public'
 });
