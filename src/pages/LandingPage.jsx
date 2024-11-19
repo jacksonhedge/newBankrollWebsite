@@ -4,6 +4,7 @@ import { ChevronDown, X } from 'lucide-react';
 import Footer from '../layout/Footer';
 import AnimatedGradient from '../components/ui/AnimatedGradient';
 import { useSleeperContext } from '../contexts/SleeperContext';
+import bankrollLogo from '../assets/Bankroll Gradient 3.jpg';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const LandingPage = () => {
                 onClick={() => navigate('/')}
               >
                 <img
-                  src="/images/Bankroll Gradient 3.jpg"
+                  src={bankrollLogo}
                   alt="Bankroll Logo"
                   className="h-10 w-auto object-contain"
                 />
@@ -108,7 +109,7 @@ const LandingPage = () => {
       <div className="max-w-7xl mx-auto px-4 py-32 relative z-10">
         <div className="text-center">
           <img
-            src="/images/Bankroll Gradient 3.jpg"
+            src={bankrollLogo}
             alt="Bankroll Logo"
             className="h-96 w-auto object-contain mx-auto mb-8"
           />
