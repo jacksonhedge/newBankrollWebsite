@@ -4,38 +4,28 @@ import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'development-mode',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'development-mode',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'development-mode',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'development-mode',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || 'development-mode',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || 'development-mode',
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'development-mode'
+  apiKey: "AIzaSyD7VNKg6Gqam8qHZiHUpzgleVYbk8Gc9qU",
+  authDomain: "bankroll-2ccb4.firebaseapp.com",
+  databaseURL: "https://bankroll-2ccb4-default-rtdb.firebaseio.com",
+  projectId: "bankroll-2ccb4",
+  storageBucket: "bankroll-2ccb4.firebasestorage.app",
+  messagingSenderId: "443440711718",
+  appId: "1:443440711718:web:dc3f58dfe81324edc3bee7",
+  measurementId: "G-QZ2NEGJV6D"
 };
-
-// Only initialize Firebase if we have valid config
-const isDevelopment = import.meta.env.DEV;
-const hasValidConfig = !isDevelopment || (
-  firebaseConfig.apiKey !== 'development-mode' &&
-  firebaseConfig.authDomain !== 'development-mode'
-);
 
 let app = null;
 let db = null;
 let auth = null;
 let analytics = null;
 
-if (hasValidConfig) {
-  try {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    auth = getAuth(app);
-    analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
-  } catch (error) {
-    console.warn('Firebase initialization error:', error);
-  }
-} else {
-  console.warn('Running in development mode without Firebase configuration');
+try {
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+  analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+} catch (error) {
+  console.warn('Firebase initialization error:', error);
 }
 
 export { db, auth, analytics };
