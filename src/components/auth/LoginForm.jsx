@@ -54,7 +54,7 @@ const LoginForm = () => {
       {/* Logo */}
       <div className="w-full max-w-md px-4 mb-8">
         <img
-          src="/assets/Bankroll Gradient 3.jpg"
+          src="/newBankrollWebsite/assets/Bankroll Gradient 3.jpg"
           alt="Bankroll"
           className="h-20 w-auto mx-auto"
         />

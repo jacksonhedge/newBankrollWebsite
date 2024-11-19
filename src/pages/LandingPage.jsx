@@ -33,7 +33,7 @@ const LandingPage = () => {
                 onClick={() => navigate('/')}
               >
                 <img
-                  src="/assets/Bankroll Gradient 3.jpg"
+                  src="/newBankrollWebsite/assets/Bankroll Gradient 3.jpg"
                   alt="Bankroll Logo"
                   className="h-10 w-auto object-contain"
                 />
@@ -109,7 +109,7 @@ const LandingPage = () => {
         <div className="text-center">
           <div className="max-w-2xl mx-auto">
             <img
-              src="/assets/Bankroll Gradient 3.jpg"
+              src="/newBankrollWebsite/assets/Bankroll Gradient 3.jpg"
               alt="Bankroll Logo"
               className="w-full h-auto max-h-64 object-contain mx-auto mb-8"
             />
