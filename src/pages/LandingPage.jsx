@@ -4,8 +4,6 @@ import { ChevronDown } from 'lucide-react';
 import Footer from '../layout/Footer';
 import AnimatedGradient from '../components/ui/AnimatedGradient';
 import { useSleeperContext } from '../contexts/SleeperContext';
-// Import logo image
-import bankrollLogo from '../assets/Bankroll Gradient 3.jpg';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -35,7 +33,7 @@ const LandingPage = () => {
                 onClick={() => navigate('/')}
               >
                 <img
-                  src={bankrollLogo}
+                  src="/assets/Bankroll Gradient 3.jpg"
                   alt="Bankroll Logo"
                   className="h-10 w-auto object-contain"
                 />
@@ -107,17 +105,19 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 py-32 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 relative z-10">
         <div className="text-center">
-          <img
-            src={bankrollLogo}
-            alt="Bankroll Logo"
-            className="h-96 w-auto object-contain mx-auto mb-8"
-          />
-          <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent">
+          <div className="max-w-2xl mx-auto">
+            <img
+              src="/assets/Bankroll Gradient 3.jpg"
+              alt="Bankroll Logo"
+              className="w-full h-auto max-h-64 object-contain mx-auto mb-8"
+            />
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent">
             Your new betting wallet
           </h1>
-          <p className="text-2xl text-purple-300 mb-12">
+          <p className="text-xl md:text-2xl text-purple-300 mb-12">
             Coming August 2024
           </p>
           <button 
@@ -130,7 +130,7 @@ const LandingPage = () => {
       </div>
 
       {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 py-20 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 py-16 md:py-20 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Feature Cards */}
           <div className="bg-purple-900/30 backdrop-blur-sm p-8 rounded-2xl hover:bg-purple-800/40 transition-all duration-300 transform hover:scale-105 border border-purple-700/50">

@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import AnimatedGradientBackground from '../ui/AnimatedGradientBackground.jsx';
 import { useAuth } from '../../contexts/AuthContext';
-import bankrollLogo from '../../assets/Bankroll Gradient 3.jpg';
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -55,7 +54,7 @@ const LoginForm = () => {
       {/* Logo */}
       <div className="w-full max-w-md px-4 mb-8">
         <img
-          src={bankrollLogo}
+          src="/assets/Bankroll Gradient 3.jpg"
           alt="Bankroll"
           className="h-20 w-auto mx-auto"
         />
