@@ -39,7 +39,7 @@ const Profile = () => {
       const randomNum = Math.floor(Math.random() * 30) + 1;
       const fileExtension = [1, 30].includes(randomNum) ? '.jpeg' : 
                           randomNum === 16 ? '.jpg' : '.png';
-      const profileImage = `/images/profile_${randomNum}${fileExtension}`;
+      const profileImage = `/newBankrollWebsite/images/profile_${randomNum}${fileExtension}`;
       updateProfileImage(currentUser.id, profileImage);
     }
   }, [currentUser]);
@@ -273,7 +273,7 @@ const Profile = () => {
       <div className="text-center space-y-3">
         <div className="w-24 h-24 mx-auto rounded-full overflow-hidden">
           <img
-            src={currentUser?.profileImage || '/images/profile_1.png'}
+            src={currentUser?.profileImage || '/newBankrollWebsite/images/profile_1.png'}
             alt="Profile"
             className="w-full h-full object-cover"
           />
