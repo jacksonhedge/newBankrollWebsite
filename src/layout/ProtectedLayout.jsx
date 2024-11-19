@@ -69,7 +69,7 @@ const ProtectedLayout = () => {
             {/* Left section - Logo */}
             <div className="flex-shrink-0">
               <img
-                src="/images/BankrollLogoTransparent.png"
+                src="/newBankrollWebsite/assets/BankrollLogoTransparent.png"
                 alt="Bankroll"
                 className="h-24 w-auto"
               />
