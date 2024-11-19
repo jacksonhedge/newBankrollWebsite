@@ -13,9 +13,9 @@ const RewardsAndChallenges = () => {
       completed: false,
       buttonColor: "bg-blue-500 hover:bg-blue-600",
       logos: [
-        { src: "/newBankrollWebsite/images/espnFantasy.png", alt: "ESPN" },
-        { src: "/newBankrollWebsite/images/sleeperFantasy.png", alt: "Sleeper" },
-        { src: "/newBankrollWebsite/images/yahoofantasy.png", alt: "Yahoo" }
+        { src: "/newBankrollWebsite/assets/espnFantasy.png", alt: "ESPN" },
+        { src: "/newBankrollWebsite/assets/sleeperFantasy.png", alt: "Sleeper" },
+        { src: "/newBankrollWebsite/assets/yahoofantasy.png", alt: "Yahoo" }
       ]
     },
     {
@@ -25,8 +25,8 @@ const RewardsAndChallenges = () => {
       completed: false,
       buttonColor: "bg-purple-500 hover:bg-purple-600",
       logos: [
-        { src: "/newBankrollWebsite/images/fanduel.png", alt: "FanDuel" },
-        { src: "/newBankrollWebsite/images/draftkingsFantasy.png", alt: "DraftKings" }
+        { src: "/newBankrollWebsite/assets/fanduel.png", alt: "FanDuel" },
+        { src: "/newBankrollWebsite/assets/draftkingsFantasy.png", alt: "DraftKings" }
       ]
     },
     {
@@ -58,7 +58,7 @@ const RewardsAndChallenges = () => {
       <div className="space-y-4 w-full max-w-md mb-8">
         <div className="bg-blue-400/30 rounded-xl p-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <img src="/newBankrollWebsite/images/sleeperFantasy.png" alt="Sleeper" className="w-8 h-8 rounded" />
+            <img src="/newBankrollWebsite/assets/sleeperFantasy.png" alt="Sleeper" className="w-8 h-8 rounded" />
             <div>
               <div className="text-white">$0.50 for your</div>
               <div className="text-white/70">Sleeper League</div>
@@ -69,7 +69,7 @@ const RewardsAndChallenges = () => {
 
         <div className="bg-blue-400/30 rounded-xl p-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <img src="/newBankrollWebsite/images/fanduel.png" alt="FanDuel" className="w-8 h-8 rounded" />
+            <img src="/newBankrollWebsite/assets/fanduel.png" alt="FanDuel" className="w-8 h-8 rounded" />
             <div>
               <div className="text-white">$1.00 FanDuel</div>
               <div className="text-white/70">Fanduel</div>
