@@ -17,7 +17,8 @@ import {
   where,
   getDocs,
   serverTimestamp, 
-  Timestamp 
+  Timestamp,
+  updateDoc
 } from 'firebase/firestore';
 
 const AuthContext = createContext();
@@ -30,8 +31,38 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Function to update user's profile image
+  async function updateProfileImage(userId, profileImage) {
+    if (!db) {
+      console.warn('Firestore is not initialized (development mode)');
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        profileImage: profileImage,
+        lastUpdated: serverTimestamp()
+      });
+
+      // Update local state
+      setCurrentUser(prev => ({
+        ...prev,
+        profileImage: profileImage
+      }));
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+      throw error;
+    }
+  }
+
   // Sign up function with enhanced user data handling
   async function signup(email, password, userData) {
+    if (!auth) {
+      console.warn('Auth is not initialized (development mode)');
+      return null;
+    }
+
     try {
       console.log('Starting signup process for:', email);
       
@@ -39,6 +70,11 @@ export function AuthProvider({ children }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       console.log('User authentication created:', user.uid);
+
+      if (!db) {
+        console.warn('Firestore is not initialized (development mode)');
+        return user;
+      }
 
       // Convert birthday string to timestamp
       const birthdayDate = new Date(userData.birthday);
@@ -78,6 +114,7 @@ export function AuthProvider({ children }) {
         dwollaBalance: 0,
         bonusBalance: 0,
         id: user.uid,
+        profileImage: null, // Will be set on first profile load
         lastUpdated: serverTimestamp(),
         lastBalanceUpdate: serverTimestamp(),
         createdAt: serverTimestamp()
@@ -100,6 +137,11 @@ export function AuthProvider({ children }) {
 
   // Enhanced login function that handles both email and username
   async function login(emailOrUsername, password) {
+    if (!auth || !db) {
+      console.warn('Auth/Firestore is not initialized (development mode)');
+      return null;
+    }
+
     try {
       let email = emailOrUsername;
       
@@ -131,6 +173,11 @@ export function AuthProvider({ children }) {
 
   // Logout function
   async function logout() {
+    if (!auth) {
+      console.warn('Auth is not initialized (development mode)');
+      return;
+    }
+
     try {
       await signOut(auth);
     } catch (error) {
@@ -141,6 +188,11 @@ export function AuthProvider({ children }) {
 
   // Password reset function
   async function resetPassword(email) {
+    if (!auth) {
+      console.warn('Auth is not initialized (development mode)');
+      return;
+    }
+
     try {
       await sendPasswordResetEmail(auth, email);
     } catch (error) {
@@ -151,8 +203,14 @@ export function AuthProvider({ children }) {
 
   // Effect to handle auth state changes
   useEffect(() => {
+    if (!auth) {
+      console.warn('Auth is not initialized (development mode)');
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
+      if (user && db) {
         try {
           // Get additional user data from Firestore
           const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -180,6 +238,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     resetPassword,
+    updateProfileImage,
     loading
   };
 

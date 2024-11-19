@@ -10,18 +10,47 @@ import {
   Search,
   Bell
 } from 'lucide-react';
-
-const navigation = [
-  { name: 'Banking', path: '/banking', icon: Wallet },
-  { name: 'My Leagues', path: '/leagues', icon: Trophy },
-  { name: 'Send Money', path: '/send', icon: SendHorizontal },
-  { name: 'Platforms', path: '/spend', icon: CreditCard },
-  { name: 'Profile', path: '/profile', icon: UserCircle },
-];
+import { useSleeperContext } from '../contexts/SleeperContext';
 
 const ProtectedLayout = () => {
   const { currentUser, loading } = useAuth();
+  const { leagues } = useSleeperContext();
   const location = useLocation();
+
+  // Total number of platforms - this matches the platforms array in Platforms.jsx
+  const totalPlatforms = 11;
+
+  const navigation = [
+    { name: 'Banking', path: '/banking', icon: Wallet },
+    { 
+      name: 'My Leagues', 
+      path: '/leagues', 
+      icon: Trophy,
+      badge: leagues.length > 0 ? leagues.length : null
+    },
+    { name: 'Send Money', path: '/send', icon: SendHorizontal },
+    { 
+      name: 'Platforms', 
+      path: '/spend', 
+      icon: CreditCard,
+      badge: totalPlatforms
+    },
+    { 
+      name: 'Profile', 
+      path: '/profile', 
+      icon: ({ className }) => currentUser?.profileImage ? (
+        <div className="w-10 h-10">
+          <img 
+            src={currentUser.profileImage} 
+            alt="Profile" 
+            className="w-full h-full rounded-full object-cover border-2 border-transparent hover:border-purple-500 transition-colors"
+          />
+        </div>
+      ) : (
+        <UserCircle className={className} />
+      )
+    },
+  ];
 
   if (loading) {
     return <div>Loading...</div>;
@@ -42,7 +71,7 @@ const ProtectedLayout = () => {
               <img
                 src="/images/BankrollLogoTransparent.png"
                 alt="Bankroll"
-                className="h-24 w-auto" // Increased size
+                className="h-24 w-auto"
               />
             </div>
 
@@ -74,14 +103,22 @@ const ProtectedLayout = () => {
                     to={item.path}
                     className={`
                       px-3 py-2 rounded-lg flex items-center space-x-2
-                      transition-colors duration-200 text-sm
+                      transition-colors duration-200 text-sm relative
                       ${isActive 
                         ? 'bg-purple-900/50 text-white' 
                         : 'text-gray-400 hover:text-white hover:bg-purple-900/30'}
+                      ${item.name === 'Profile' ? 'pl-2' : ''}
                     `}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.name}</span>
+                    <Icon className={item.name === 'Profile' ? '' : 'h-5 w-5'} />
+                    <span className={item.name === 'Profile' ? 'ml-2' : ''}>
+                      {item.name}
+                    </span>
+                    {item.badge && (
+                      <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {item.badge}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

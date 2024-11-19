@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 import Footer from '../layout/Footer';
-import AnimatedGradientBackground from '../components/ui/AnimatedGradientBackground';
+import AnimatedGradient from '../components/ui/AnimatedGradient';
 import { useSleeperContext } from '../contexts/SleeperContext';
 
 const LandingPage = () => {
@@ -19,7 +19,7 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen text-white relative">
-      <AnimatedGradientBackground />
+      <AnimatedGradient />
       
       {/* Navigation Bar */}
       <nav className="border-b border-purple-900/50 backdrop-blur-sm sticky top-0 z-50">
@@ -33,9 +33,9 @@ const LandingPage = () => {
                 onClick={() => navigate('/')}
               >
                 <img
-                  src="/api/placeholder/120/40"
+                  src="/images/Bankroll Gradient 3.jpg"
                   alt="Bankroll Logo"
-                  className="h-10 w-auto"
+                  className="h-10 w-auto object-contain"
                 />
               </div>
               
@@ -105,8 +105,13 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 py-32">
+      <div className="max-w-7xl mx-auto px-4 py-32 relative z-10">
         <div className="text-center">
+          <img
+            src="/images/Bankroll Gradient 3.jpg"
+            alt="Bankroll Logo"
+            className="h-96 w-auto object-contain mx-auto mb-8"
+          />
           <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent">
             Your new betting wallet
           </h1>
@@ -117,13 +122,13 @@ const LandingPage = () => {
             className="px-8 py-4 bg-green-500 text-white rounded-full text-lg hover:bg-green-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-500/25"
             onClick={handleSignUp}
           >
-            Join the waitlist
+            Get Started
           </button>
         </div>
       </div>
 
       {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 py-20">
+      <div className="max-w-7xl mx-auto px-4 py-20 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Feature Cards */}
           <div className="bg-purple-900/30 backdrop-blur-sm p-8 rounded-2xl hover:bg-purple-800/40 transition-all duration-300 transform hover:scale-105 border border-purple-700/50">

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../services/firebase/config.js';
-import { UserCircle, Shield, Heart } from 'lucide-react';
+import { UserCircle, Shield, Heart, ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import AnimatedGradientBackground from '../ui/AnimatedGradientBackground.jsx';
-import { useAuth } from '@/contexts/AuthContext';  // Updated path
+import { useAuth } from '../../contexts/AuthContext';
 
-
-
+// ... (ProgressBar component remains unchanged)
 const ProgressBar = ({ currentStep }) => {
   return (
     <div className="w-full max-w-2xl px-4 mb-12">
@@ -56,23 +55,23 @@ const ProgressBar = ({ currentStep }) => {
 
 const SignUpForm = () => {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false); // Added loading state
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
     lastName: '',
     password: '',
     confirmPassword: '',
-    address1: '',
-    address2: '', // Optional second address line
-    city: '',
-    state: '', // Added state field
-    postalCode: '',
+    username: '',
     birthday: '',
     phoneNumber: '',
+    venmoUsername: '',
     sleeperUsername: '',
-    promoCode: '',
+    referrer: '',
     acceptTerms: false,
     acceptDwolla: false
   });
@@ -126,7 +125,7 @@ const SignUpForm = () => {
         }
         break;
       case 'sleeperUsername':
-        if (value && value.length > 0) {  // Only validate if a value is provided
+        if (value && value.length > 0) {
           if (!value.startsWith('@')) {
             return 'Sleeper username must start with @';
           }
@@ -194,7 +193,6 @@ const SignUpForm = () => {
       [name]: newValue
     }));
 
-    // Clear field error when user starts typing
     if (fieldErrors[name]) {
       setFieldErrors(prev => ({
         ...prev,
@@ -202,7 +200,6 @@ const SignUpForm = () => {
       }));
     }
 
-    // Validate confirmPassword when password changes
     if (name === 'password' && formData.confirmPassword) {
       const confirmError = formData.confirmPassword !== value ? 'Passwords do not match' : '';
       setFieldErrors(prev => ({
@@ -212,7 +209,6 @@ const SignUpForm = () => {
     }
   };
 
-  // Format phone number as user types
   const formatPhoneNumber = (value) => {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 3) return numbers;
@@ -220,7 +216,6 @@ const SignUpForm = () => {
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
   };
 
-  
   const handlePhoneChange = (e) => {
     const formatted = formatPhoneNumber(e.target.value);
     setFormData(prev => ({
@@ -232,7 +227,6 @@ const SignUpForm = () => {
   const validatePage1 = () => {
     const errors = {};
     
-    // Validate required fields
     ['email', 'firstName', 'lastName', 'password', 'confirmPassword'].forEach(field => {
       const error = validateField(field, formData[field]);
       if (error) errors[field] = error;
@@ -245,11 +239,16 @@ const SignUpForm = () => {
   const validatePage2 = () => {
     const errors = {};
     
-    // Validate required fields
     ['username', 'birthday', 'phoneNumber', 'venmoUsername'].forEach(field => {
       const error = validateField(field, formData[field]);
       if (error) errors[field] = error;
     });
+
+    // Only validate sleeperUsername if it's not empty
+    if (formData.sleeperUsername) {
+      const sleeperError = validateField('sleeperUsername', formData.sleeperUsername);
+      if (sleeperError) errors.sleeperUsername = sleeperError;
+    }
 
     if (!formData.acceptTerms) {
       errors.acceptTerms = 'You must accept the terms and conditions';
@@ -266,12 +265,36 @@ const SignUpForm = () => {
     e.preventDefault();
     setError('');
     if (validatePage1()) {
+      // Clear page 2 fields when moving to page 2
+      setFormData(prev => ({
+        ...prev,
+        username: '',
+        birthday: '',
+        phoneNumber: '',
+        venmoUsername: '',
+        sleeperUsername: '',
+        referrer: '',
+        acceptTerms: false,
+        acceptDwolla: false
+      }));
       setPage(2);
     }
   };
 
   const handleBack = () => {
     setError('');
+    // Keep only page 1 data when going back
+    setFormData(prev => ({
+      ...prev,
+      username: '',
+      birthday: '',
+      phoneNumber: '',
+      venmoUsername: '',
+      sleeperUsername: '',
+      referrer: '',
+      acceptTerms: false,
+      acceptDwolla: false
+    }));
     setPage(1);
   };
 
@@ -280,52 +303,23 @@ const SignUpForm = () => {
     setError('');
     
     if (validatePage2()) {
-      setLoading(true); // Set loading state
+      setLoading(true);
       try {
-        // Create user authentication
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          formData.email,
-          formData.password
-        );
-        
-        // Get the user object
-        const user = userCredential.user;
-        
-        // Convert birthday string to timestamp
-        const birthdayDate = new Date(formData.birthday);
-        const birthdayTimestamp = Timestamp.fromDate(birthdayDate);
-        
-        // Create user document in Firestore
-        await setDoc(doc(db, "users", user.uid), {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          address1: formData.address1,
-          address2: formData.address2 || null,
-          city: formData.city,
-          state: formData.state,
-          postalCode: formData.postalCode,
-          birthday: birthdayTimestamp,
-          phoneNumber: formData.phoneNumber,
-          sleeperUsername: formData.sleeperUsername.startsWith('@') ? 
-            formData.sleeperUsername : 
-            `@${formData.sleeperUsername}`,
-          promoCode: formData.promoCode || null,
-          dwollaCustomerId: "", // Will be set when Dwolla account is created
-          dwollaBalance: 0,
-          bonusBalance: 0,
-          id: user.uid,
-          lastUpdated: serverTimestamp(),
-          lastBalanceUpdate: serverTimestamp(),
-          createdAt: serverTimestamp()
-        });
-  
-        navigate('/banking');
+        // Generate random profile image number between 1 and 30
+        const randomProfileNum = Math.floor(Math.random() * 30) + 1;
+        const profileImage = `/images/profile_${randomProfileNum}.png`;
+
+        // Create user with all form data and profile image
+        const userData = {
+          ...formData,
+          profileImage
+        };
+
+        await signup(formData.email, formData.password, userData);
+        navigate('/platforms');
         
       } catch (error) {
         console.error('Error during sign up:', error);
-        // Handle specific Firebase errors
         switch (error.code) {
           case 'auth/email-already-in-use':
             setError('This email is already registered. Please use a different email or try logging in.');
@@ -343,7 +337,7 @@ const SignUpForm = () => {
             setError('An error occurred during sign up. Please try again.');
         }
       } finally {
-        setLoading(false); // Reset loading state
+        setLoading(false);
       }
     }
   };
@@ -352,25 +346,72 @@ const SignUpForm = () => {
   const labelClass = "block text-sm font-medium text-purple-200 mb-2";
   const errorClass = "text-red-500 text-sm mt-1";
 
-  const renderField = (name, label, type = 'text', required = true) => (
-    <div>
-      <label htmlFor={name} className={labelClass}>
-        {label}{required && '*'}
-      </label>
-      <input
-        type={type}
-        id={name}
-        name={name}
-        value={formData[name]}
-        onChange={name === 'phoneNumber' ? handlePhoneChange : handleChange}
-        required={required}
-        className={`${inputClass} ${fieldErrors[name] ? 'border-red-500' : ''}`}
-      />
-      {fieldErrors[name] && (
-        <div className={errorClass}>{fieldErrors[name]}</div>
-      )}
-    </div>
-  );
+  const renderField = (name, label, type = 'text', required = true) => {
+    if (name === 'password' || name === 'confirmPassword') {
+      const isPassword = name === 'password';
+      const showPasswordState = isPassword ? showPassword : showConfirmPassword;
+      const togglePasswordVisibility = () => {
+        if (isPassword) {
+          setShowPassword(!showPassword);
+        } else {
+          setShowConfirmPassword(!showConfirmPassword);
+        }
+      };
+
+      return (
+        <div>
+          <label htmlFor={name} className={labelClass}>
+            {label}{required && '*'}
+          </label>
+          <div className="relative">
+            <input
+              type={showPasswordState ? 'text' : 'password'}
+              id={name}
+              name={name}
+              value={formData[name]}
+              onChange={handleChange}
+              required={required}
+              className={`${inputClass} ${fieldErrors[name] ? 'border-red-500' : ''}`}
+            />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-200 hover:text-green-400 focus:outline-none"
+            >
+              {showPasswordState ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+          {fieldErrors[name] && (
+            <div className={errorClass}>{fieldErrors[name]}</div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <label htmlFor={name} className={labelClass}>
+          {label}{required && '*'}
+        </label>
+        <input
+          type={type}
+          id={name}
+          name={name}
+          value={formData[name]}
+          onChange={name === 'phoneNumber' ? handlePhoneChange : handleChange}
+          required={required}
+          className={`${inputClass} ${fieldErrors[name] ? 'border-red-500' : ''}`}
+        />
+        {fieldErrors[name] && (
+          <div className={errorClass}>{fieldErrors[name]}</div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start pt-8 text-white relative">
@@ -379,9 +420,9 @@ const SignUpForm = () => {
       {/* Logo */}
       <div className="w-full max-w-md px-4 mb-8">
         <img
-          src="/api/placeholder/120/40"
+          src="/images/Bankroll Gradient 3.jpg"
           alt="Bankroll"
-          className="h-10 w-auto mx-auto"
+          className="h-20 w-auto mx-auto"
         />
       </div>
 
@@ -420,8 +461,8 @@ const SignUpForm = () => {
                 {renderField('birthday', 'Birthday (MM/DD/YYYY)', 'date')}
                 {renderField('phoneNumber', 'Phone Number', 'tel')}
                 {renderField('venmoUsername', 'Venmo Username')}
-                {renderField('referrer', 'Who referred you?', 'text', false)}
-                {renderField('sleeperUsername', 'Sleeper Username', 'text', false)}
+                {renderField('sleeperUsername', 'Sleeper Username (Optional)', 'text', false)}
+                {renderField('referrer', 'Who referred you? (Optional)', 'text', false)}
 
                 <div className="space-y-4">
                   <div className="flex items-center">
@@ -469,27 +510,27 @@ const SignUpForm = () => {
               </div>
             )}
 
-<button
-  type="submit"
-  disabled={loading}
-  className={`w-full px-6 py-3 bg-green-500 text-white rounded-lg 
-    transition-all duration-200 transform hover:scale-105 font-medium 
-    shadow-lg hover:shadow-green-500/25
-    ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-600'}
-    ${error ? 'mt-6' : 'mt-4'}`}
->
-  {loading ? (
-    <div className="flex items-center justify-center">
-      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      Creating Account...
-    </div>
-  ) : (
-    page === 1 ? 'Next' : 'Complete Sign Up'
-  )}
-</button>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full px-6 py-3 bg-green-500 text-white rounded-lg 
+                transition-all duration-200 transform hover:scale-105 font-medium 
+                shadow-lg hover:shadow-green-500/25
+                ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-600'}
+                ${error ? 'mt-6' : 'mt-4'}`}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating Account...
+                </div>
+              ) : (
+                page === 1 ? 'Next' : 'Complete Sign Up'
+              )}
+            </button>
           </form>
 
           <div className="mt-6 text-center">

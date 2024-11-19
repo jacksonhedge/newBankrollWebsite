@@ -1,44 +1,42 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics, isSupported } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { getAnalytics } from 'firebase/analytics';
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyD7VNKg6Gqam8qHZiHUpzgleVYbk8Gc9qU",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "bankroll-2ccb4.firebaseapp.com",
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://bankroll-2ccb4-default-rtdb.firebaseio.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "bankroll-2ccb4",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "bankroll-2ccb4.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "443440711718",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:443440711718:web:dc3f58dfe81324edc3bee7",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-QZ2NEGJV6D"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'development-mode',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'development-mode',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'development-mode',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'development-mode',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || 'development-mode',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || 'development-mode',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'development-mode'
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Only initialize Firebase if we have valid config
+const isDevelopment = import.meta.env.DEV;
+const hasValidConfig = !isDevelopment || (
+  firebaseConfig.apiKey !== 'development-mode' &&
+  firebaseConfig.authDomain !== 'development-mode'
+);
 
-// Initialize Analytics with error handling
+let app = null;
+let db = null;
+let auth = null;
 let analytics = null;
-const initializeAnalytics = async () => {
+
+if (hasValidConfig) {
   try {
-    if (typeof window !== 'undefined' && await isSupported()) {
-      analytics = getAnalytics(app);
-    }
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+    analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
   } catch (error) {
-    console.warn('Firebase Analytics not supported:', error);
+    console.warn('Firebase initialization error:', error);
   }
-};
+} else {
+  console.warn('Running in development mode without Firebase configuration');
+}
 
-// Initialize Analytics
-initializeAnalytics();
-
-// Initialize Firebase Authentication and get a reference to the service
-const auth = getAuth(app);
-
-// Initialize Cloud Firestore and get a reference to the service
-const db = getFirestore(app);
-
-export { auth, db, analytics };
+export { db, auth, analytics };
 export default app;

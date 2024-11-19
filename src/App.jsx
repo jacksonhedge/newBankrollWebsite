@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { SleeperProvider } from './contexts/SleeperContext';
@@ -11,8 +11,33 @@ import MyLeagues from './pages/MyLeagues';
 import SendMoney from './pages/SendMoney';
 import Platforms from './pages/Platforms';
 import Profile from './pages/Profile';
+import CreateGroup from './pages/CreateGroup';
+import GroupView from './pages/GroupView';
+import NotificationSettings from './pages/NotificationSettings';
+import { notificationsService } from './services/firebase/NotificationsService';
+import { auth } from './services/firebase/config';
 
 function App() {
+  useEffect(() => {
+    // Initialize push notifications when user is authenticated
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const token = await notificationsService.initializePushNotifications();
+          if (token) {
+            await notificationsService.saveNotificationPreferences(user.uid, {
+              pushToken: token
+            });
+          }
+        } catch (error) {
+          console.error('Error initializing push notifications:', error);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <AuthProvider>
       <SleeperProvider>
@@ -30,6 +55,9 @@ function App() {
               <Route path="/send" element={<SendMoney />} />
               <Route path="/spend" element={<Platforms />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/create-group" element={<CreateGroup />} />
+              <Route path="/group/:id" element={<GroupView />} />
+              <Route path="/notifications" element={<NotificationSettings />} />
             </Route>
           </Routes>
         </Router>
