@@ -10,7 +10,7 @@
     "start": "node server.js",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d docs"
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.0",
