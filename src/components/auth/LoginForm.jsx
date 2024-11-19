@@ -16,7 +16,7 @@ const LoginForm = () => {
     password: ''
   });
 
-  const from = location.state?.from?.pathname || '/banking';
+  const from = location.state?.from?.pathname || '/spend';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
