@@ -1,203 +1,198 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { groupService } from '../services/firebase/GroupService';
-import { Card } from '../components/ui/card';
-import { X, ChevronLeft, ChevronRight, Check, Smile, Users } from 'lucide-react';
-
-const EMOJI_OPTIONS = [
-  '🏈', '⚽️', '🏀', '⚾️', '🎾', '🏒', '🏂', '🎰', '🎲', '🎮',
-  '🏆', '💰', '🎯', '🎪', '🎨', '🎭', '🎪', '🎢', '🎡', '🎪'
-];
+import { Input } from '../components/ui/input';
 
 const CreateGroup = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    emoji: '🏈',
-    members: []
-  });
+  const [groupName, setGroupName] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleNext = () => {
-    if (step === 1 && !formData.name.trim()) {
-      setError('Please enter a group name');
-      return;
-    }
-    setError('');
-    setStep(prev => prev + 1);
-  };
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (searchTerm.length >= 2) {
+        try {
+          const results = await groupService.searchUsers(searchTerm);
+          // Filter out the current user and already selected users
+          const filteredResults = results.filter(user => 
+            user.uid !== currentUser.uid && 
+            !selectedUsers.some(selected => selected.uid === user.uid)
+          );
+          setSearchResults(filteredResults);
+        } catch (err) {
+          console.error('Error searching users:', err);
+          setError('Failed to search users');
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
 
-  const handleBack = () => {
-    setStep(prev => prev - 1);
-    setError('');
-  };
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, currentUser.uid, selectedUsers]);
 
-  const handleSubmit = async () => {
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
     try {
-      setLoading(true);
-      setError('');
-      await groupService.createGroup({
-        name: formData.name,
-        emoji: formData.emoji,
-      }, currentUser.id);
-      navigate('/profile');
+      const groupData = {
+        name: groupName,
+        pendingMembers: selectedUsers.map(user => ({
+          uid: user.uid,
+          displayName: user.displayName,
+          username: user.username,
+          email: user.email,
+          phone: user.phone,
+          photoURL: user.photoURL
+        }))
+      };
+
+      const newGroup = await groupService.createGroup(groupData, currentUser);
+      navigate(`/group/${newGroup.id}`);
     } catch (err) {
-      setError('Failed to create group. Please try again.');
       console.error('Error creating group:', err);
+      setError('Failed to create group');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const renderStep = () => {
-    switch (step) {
-      case 1:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-white">Name your group</h2>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter group name"
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              maxLength={50}
-            />
-          </div>
-        );
-      case 2:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-white">Choose an emoji</h2>
-            <div className="grid grid-cols-5 gap-3">
-              {EMOJI_OPTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => setFormData({ ...formData, emoji })}
-                  className={`text-2xl p-3 rounded-lg ${
-                    formData.emoji === emoji
-                      ? 'bg-blue-500 hover:bg-blue-600'
-                      : 'bg-gray-800 hover:bg-gray-700'
-                  } transition-colors`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-white">Add people (Optional)</h2>
-            <p className="text-gray-400">You can add people to your group later</p>
-          </div>
-        );
-      default:
-        return null;
-    }
+  const handleSelectUser = (user) => {
+    setSelectedUsers(prev => [...prev, user]);
+    setSearchResults(prev => prev.filter(u => u.uid !== user.uid));
+    setSearchTerm('');
+  };
+
+  const handleRemoveUser = (user) => {
+    setSelectedUsers(prev => prev.filter(u => u.uid !== user.uid));
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      {/* Header */}
-      <div className="border-b border-gray-800 p-4">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button
-            onClick={() => navigate('/profile')}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <X className="h-6 w-6" />
-          </button>
-          <h1 className="text-lg font-semibold text-white">Create Group</h1>
-          <div className="w-6" /> {/* Spacer for alignment */}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Create a New Group</h1>
+      
+      <form onSubmit={handleCreateGroup} className="space-y-6">
+        <div>
+          <label htmlFor="groupName" className="block text-sm font-medium mb-2">
+            Group Name
+          </label>
+          <Input
+            id="groupName"
+            type="text"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            placeholder="Enter group name"
+            required
+          />
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-4">
-        <div className="max-w-lg mx-auto">
-          <Card className="bg-gray-900 border-gray-800">
-            <div className="p-6 space-y-6">
-              {/* Progress Steps */}
-              <div className="flex items-center justify-center space-x-4 mb-8">
-                {[
-                  { icon: <Smile className="w-5 h-5" />, label: 'Name' },
-                  { icon: <Smile className="w-5 h-5" />, label: 'Emoji' },
-                  { icon: <Users className="w-5 h-5" />, label: 'People' }
-                ].map((s, i) => (
-                  <div key={i} className="flex items-center">
-                    <div
-                      className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                        step > i
-                          ? 'bg-blue-500 text-white'
-                          : step === i + 1
-                          ? 'bg-blue-500/20 text-blue-500'
-                          : 'bg-gray-800 text-gray-400'
-                      }`}
-                    >
-                      {step > i ? <Check className="w-5 h-5" /> : s.icon}
-                    </div>
-                    {i < 2 && (
-                      <div
-                        className={`w-12 h-0.5 mx-2 ${
-                          step > i + 1 ? 'bg-blue-500' : 'bg-gray-800'
-                        }`}
+        <div>
+          <label htmlFor="userSearch" className="block text-sm font-medium mb-2">
+            Add Members
+          </label>
+          <Input
+            id="userSearch"
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by username, email, or phone"
+          />
+          
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <div className="mt-2 border border-purple-500/20 rounded-md overflow-hidden">
+              {searchResults.map((user, index) => (
+                <div
+                  key={`search-${user.uid}-${index}`}
+                  className="p-3 hover:bg-gray-900/40 cursor-pointer flex items-center justify-between"
+                  onClick={() => handleSelectUser(user)}
+                >
+                  <div className="flex items-center space-x-3">
+                    {user.photoURL && (
+                      <img
+                        src={user.photoURL}
+                        alt={user.displayName}
+                        className="w-8 h-8 rounded-full"
                       />
                     )}
+                    <div>
+                      <div className="font-medium">{user.displayName}</div>
+                      <div className="text-sm text-gray-400">
+                        {user.username || user.email || user.phone}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-purple-500 hover:text-purple-400"
+                  >
+                    Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Selected Users */}
+          {selectedUsers.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-medium mb-2">Selected Members</h3>
+              <div className="space-y-2">
+                {selectedUsers.map((user, index) => (
+                  <div
+                    key={`selected-${user.uid}-${index}`}
+                    className="flex items-center justify-between p-2 bg-gray-900/40 rounded-md"
+                  >
+                    <div className="flex items-center space-x-3">
+                      {user.photoURL && (
+                        <img
+                          src={user.photoURL}
+                          alt={user.displayName}
+                          className="w-8 h-8 rounded-full"
+                        />
+                      )}
+                      <div>
+                        <div className="font-medium">{user.displayName}</div>
+                        <div className="text-sm text-gray-400">
+                          {user.username || user.email || user.phone}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveUser(user)}
+                      className="text-red-500 hover:text-red-400"
+                    >
+                      Remove
+                    </button>
                   </div>
                 ))}
               </div>
-
-              {/* Step Content */}
-              {renderStep()}
-
-              {/* Error Message */}
-              {error && (
-                <p className="text-red-500 text-sm mt-2">{error}</p>
-              )}
-
-              {/* Navigation Buttons */}
-              <div className="flex justify-between mt-8">
-                <button
-                  onClick={handleBack}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                    step === 1
-                      ? 'invisible'
-                      : 'bg-gray-800 text-white hover:bg-gray-700'
-                  } transition-colors`}
-                  disabled={step === 1}
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  <span>Back</span>
-                </button>
-                {step < 3 ? (
-                  <button
-                    onClick={handleNext}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
-                  >
-                    <span>Create Group</span>
-                    <Check className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
             </div>
-          </Card>
+          )}
         </div>
-      </div>
+
+        {error && (
+          <div className="text-red-500 text-sm">{error}</div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isLoading || !groupName.trim()}
+          className="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'Creating...' : 'Create Group'}
+        </button>
+      </form>
     </div>
   );
 };
