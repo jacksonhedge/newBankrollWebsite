@@ -2,12 +2,45 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/images/IconOnly_Transparent_NoBuffer%20(1).png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bankroll by Hedge Pay</title>
-    <script type="module" crossorigin src="/newBankrollWebsite/assets/main-CEMKcI3h.js"></script>
-    <link rel="stylesheet" crossorigin href="/newBankrollWebsite/assets/main-CY8fu2Vo.css">
+    <meta name="theme-color" content="#1f2937" />
+    <meta name="description" content="Manage your sports betting bankroll" />
+    
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/images/BankrollLogoTransparent.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bankroll" />
+    
+    <!-- Service Worker Support -->
+    <meta name="service-worker-allowed" content="/" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Firebase Messaging -->
+    <meta name="gcm_sender_id" content="443440711718" />
+    
+    <title>Bankroll</title>
+    <script type="module" crossorigin src="/assets/main-4FmEssiF.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/main-CbrMZYBT.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Check if service workers are supported
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/',
+            updateViaCache: 'none'
+          }).then(registration => {
+            console.log('ServiceWorker registration successful:', registration);
+          }).catch(error => {
+            console.error('ServiceWorker registration failed:', error);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
