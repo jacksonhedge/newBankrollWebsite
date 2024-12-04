@@ -1,12 +1,18 @@
-// src/contexts/AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, memo } from 'react';
 import { auth, db } from '../services/firebase/config';
+import StorageService from '../services/firebase/StorageService';
+import { bonusWalletService } from '../services/BonusWalletService';
+import { walletService, PLATFORMS } from '../services/WalletService';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  fetchSignInMethodsForEmail,
+  deleteUser
 } from 'firebase/auth';
 import { 
   doc, 
@@ -22,17 +28,30 @@ import {
 } from 'firebase/firestore';
 
 const AuthContext = createContext();
+const DEFAULT_PROFILE_IMAGE = '/images/profile_1.jpeg';
+
+// List of admin emails
+const ADMIN_EMAILS = [
+  'admin@bankroll.com',
+  'jackson@bankroll.com',
+  'jackson@hedgepay.co'
+];
 
 export function useAuth() {
   return useContext(AuthContext);
 }
 
-export function AuthProvider({ children }) {
+export const AuthProvider = memo(({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [signupData, setSignupData] = useState(null);
 
-  // Function to update user's profile image
-  async function updateProfileImage(userId, profileImage) {
+  const isAdmin = useCallback((user) => {
+    return user && ADMIN_EMAILS.includes(user.email);
+  }, []);
+
+  const updateUserData = useCallback(async (userId, data) => {
     if (!db) {
       console.warn('Firestore is not initialized (development mode)');
       return;
@@ -41,116 +60,218 @@ export function AuthProvider({ children }) {
     try {
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, {
-        profileImage: profileImage,
+        ...data,
         lastUpdated: serverTimestamp()
       });
 
-      // Update local state
+      const updatedDoc = await getDoc(userRef);
+      const updatedData = updatedDoc.data();
+
       setCurrentUser(prev => ({
         ...prev,
-        profileImage: profileImage
+        ...updatedData
       }));
+
+      return updatedData;
     } catch (error) {
-      console.error("Error updating profile image:", error);
+      console.error("Error in updateUserData:", error);
       throw error;
     }
-  }
+  }, []);
 
-  // Sign up function with enhanced user data handling
-  async function signup(email, password, userData) {
-    if (!auth) {
-      console.warn('Auth is not initialized (development mode)');
-      return null;
+  const updateProfileImage = useCallback(async (userId, imageFile) => {
+    if (!db) {
+      console.warn('Firestore is not initialized (development mode)');
+      return;
     }
 
     try {
-      console.log('Starting signup process for:', email);
+      console.log('Starting profile image update for user:', userId);
+
+      let imageUrl;
+      if (imageFile instanceof File) {
+        console.log('Uploading new image file to Storage');
+        imageUrl = await StorageService.uploadProfileImage(imageFile, userId);
+        console.log('Image uploaded successfully, URL:', imageUrl);
+      } else {
+        console.log('Using provided image URL');
+        imageUrl = imageFile;
+      }
+
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        profileImage: imageUrl,
+        lastUpdated: serverTimestamp()
+      });
+      console.log('Firestore document updated with new image URL');
+
+      const updatedDoc = await getDoc(userRef);
+      const updatedData = updatedDoc.data();
+
+      setCurrentUser(prev => ({
+        ...prev,
+        ...updatedData,
+        profileImage: imageUrl
+      }));
+      console.log('Local state updated with new user data');
+
+      return imageUrl;
+    } catch (error) {
+      console.error("Error in updateProfileImage:", error);
+      throw error;
+    }
+  }, []);
+
+  const validateSignupStep1 = useCallback(async (email, password) => {
+    if (!auth) {
+      console.warn('Auth is not initialized (development mode)');
+      return;
+    }
+
+    try {
+      // Check if email is already in use using Firebase Auth
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      if (methods.length > 0) {
+        throw new Error('Email is already in use');
+      }
+
+      // Store credentials for step 2
+      setSignupData({ email, password });
+      setIsNewUser(true);
+      return true;
+    } catch (error) {
+      console.error('Signup validation error:', error);
+      throw error;
+    }
+  }, []);
+
+  const completeSignup = useCallback(async (userData) => {
+    if (!db || !signupData) {
+      console.warn('Firestore is not initialized or no signup data');
+      return;
+    }
+
+    let tempUser = null;
+
+    try {
+      const requiredFields = ['firstName', 'lastName', 'username', 'phoneNumber'];
+      for (const field of requiredFields) {
+        if (!userData[field]) {
+          throw new Error(`${field} is required`);
+        }
+      }
+
+      if (!userData.username.startsWith('#')) {
+        throw new Error('Username must start with #');
+      }
+
+      // Create Firebase Auth user first
+      const userCredential = await createUserWithEmailAndPassword(auth, signupData.email, signupData.password);
+      tempUser = userCredential.user;
+
+      // Now that we're authenticated, check username availability
+      const usernameQuery = query(collection(db, "users"), where("username", "==", userData.username));
+      const usernameSnapshot = await getDocs(usernameQuery);
       
-      // Create the user account
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      console.log('User authentication created:', user.uid);
-
-      if (!db) {
-        console.warn('Firestore is not initialized (development mode)');
-        return user;
+      if (!usernameSnapshot.empty) {
+        // Username is taken, delete the auth user and throw error
+        await deleteUser(tempUser);
+        throw new Error('Username is already taken');
       }
 
-      // Convert birthday string to timestamp
-      const birthdayDate = new Date(userData.birthday);
-      const birthdayTimestamp = Timestamp.fromDate(birthdayDate);
+      const formattedSleeperUsername = userData.sleeperUsername ? 
+        (userData.sleeperUsername.startsWith('@') ? userData.sleeperUsername : `@${userData.sleeperUsername}`) : 
+        null;
 
-      // Format usernames with @ prefix if needed
-      const formattedSleeperUsername = userData.sleeperUsername?.startsWith('@') 
-        ? userData.sleeperUsername 
-        : `@${userData.sleeperUsername}`;
+      const formattedVenmoUsername = userData.venmoUsername ? 
+        (userData.venmoUsername.startsWith('@') ? userData.venmoUsername : `@${userData.venmoUsername}`) : 
+        null;
 
-      const formattedVenmoUsername = userData.venmoUsername?.startsWith('@') 
-        ? userData.venmoUsername 
-        : `@${userData.venmoUsername}`;
-
-      // Ensure username is provided
-      if (!userData.username) {
-        throw new Error('Username is required');
-      }
-
-      // Create the user document in Firestore
       const userDoc = {
+        id: tempUser.uid,
+        email: signupData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,
-        email: userData.email,
         username: userData.username,
-        venmoUsername: formattedVenmoUsername,
-        address1: userData.address1 || '',
-        address2: userData.address2 || null,
-        city: userData.city || '',
-        state: userData.state || '',
-        postalCode: userData.postalCode || '',
-        birthday: birthdayTimestamp,
-        phoneNumber: userData.phoneNumber,
-        sleeperUsername: formattedSleeperUsername,
-        promoCode: userData.promoCode || null,
+        phoneNumbers: [{
+          number: userData.phoneNumber,
+          verified: false,
+          primary: true,
+          dateAdded: new Date().toISOString() // Use ISO string instead of serverTimestamp
+        }],
+        identifiers: {
+          username: userData.username,
+          sleeperUsername: formattedSleeperUsername,
+          venmoUsername: formattedVenmoUsername
+        },
+        profileImage: DEFAULT_PROFILE_IMAGE,
+        notificationPreferences: {
+          inApp: true,
+          email: userData.notificationPreferences?.email ?? true,
+          pushToken: null
+        },
+        notifications: [],
         dwollaCustomerId: '',
         dwollaBalance: 0,
-        bonusBalance: 0,
-        id: user.uid,
-        profileImage: null, // Will be set on first profile load
+        bonusBalance: 25, // Initial bonus balance to distribute
         lastUpdated: serverTimestamp(),
         lastBalanceUpdate: serverTimestamp(),
         createdAt: serverTimestamp()
       };
 
       console.log('Creating Firestore document for user:', userDoc);
-      await setDoc(doc(db, "users", user.uid), userDoc);
+      await setDoc(doc(db, "users", tempUser.uid), userDoc);
       console.log('Firestore document created successfully');
 
-      return user;
+      // Initialize the user's wallet structure
+      await walletService.initializeUserWallet(tempUser.uid);
+
+      // Add $5 bonus to each platform
+      for (const platformId of Object.keys(PLATFORMS)) {
+        try {
+          await bonusWalletService.transferBonusToSubWallet(tempUser.uid, platformId, 5);
+        } catch (error) {
+          console.error(`Error adding bonus for platform ${platformId}:`, error);
+          // Continue with other platforms even if one fails
+        }
+      }
+      
+      setIsNewUser(false);
+      setSignupData(null);
+      setCurrentUser({ ...tempUser, ...userDoc });
+
+      return userDoc;
     } catch (error) {
-      console.error('Signup error:', {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
+      // If something fails and we created a temporary user, clean it up
+      if (tempUser) {
+        try {
+          await deleteUser(tempUser);
+        } catch (cleanupError) {
+          console.error('Error cleaning up temporary user:', cleanupError);
+        }
+      }
+      console.error('Signup completion error:', error);
       throw error;
     }
-  }
+  }, [signupData]);
 
-  // Enhanced login function that handles both email and username
-  async function login(emailOrUsername, password) {
+  const login = useCallback(async (emailOrUsername, password) => {
     if (!auth || !db) {
       console.warn('Auth/Firestore is not initialized (development mode)');
       return null;
     }
 
     try {
+      await setPersistence(auth, browserLocalPersistence);
+      console.log('Auth persistence set to LOCAL');
+
       let email = emailOrUsername;
       
-      // Check if input is an email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const isEmail = emailRegex.test(emailOrUsername);
 
-      // If not an email, look up the corresponding email by username
       if (!isEmail) {
+        console.log('Looking up user by username:', emailOrUsername);
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("username", "==", emailOrUsername));
         const querySnapshot = await getDocs(q);
@@ -160,19 +281,31 @@ export function AuthProvider({ children }) {
         }
 
         email = querySnapshot.docs[0].data().email;
+        console.log('Found email for username:', email);
       }
 
-      // Proceed with Firebase email/password authentication
+      console.log('Attempting to sign in with email:', email);
       const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Sign in successful, user ID:', result.user.uid);
+
+      const userDoc = await getDoc(doc(db, "users", result.user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log('Fetched user data from Firestore:', userData);
+        setCurrentUser({ ...result.user, ...userData });
+      } else {
+        console.warn('No Firestore document found for user:', result.user.uid);
+        setCurrentUser(result.user);
+      }
+
       return result.user;
     } catch (error) {
       console.error("Login error:", error);
       throw error;
     }
-  }
+  }, []);
 
-  // Logout function
-  async function logout() {
+  const logout = useCallback(async () => {
     if (!auth) {
       console.warn('Auth is not initialized (development mode)');
       return;
@@ -180,14 +313,18 @@ export function AuthProvider({ children }) {
 
     try {
       await signOut(auth);
+      setCurrentUser(null);
+      setIsNewUser(false);
+      setSignupData(null);
+      StorageService.clearCache();
+      console.log('User signed out successfully');
     } catch (error) {
       console.error("Error in logout:", error);
       throw error;
     }
-  }
+  }, []);
 
-  // Password reset function
-  async function resetPassword(email) {
+  const resetPassword = useCallback(async (email) => {
     if (!auth) {
       console.warn('Auth is not initialized (development mode)');
       return;
@@ -199,9 +336,8 @@ export function AuthProvider({ children }) {
       console.error("Error in password reset:", error);
       throw error;
     }
-  }
+  }, []);
 
-  // Effect to handle auth state changes
   useEffect(() => {
     if (!auth) {
       console.warn('Auth is not initialized (development mode)');
@@ -209,37 +345,61 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    console.log('Setting up auth state change listener');
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && db) {
+      console.log('Auth state changed. User:', user ? user.uid : 'null');
+      
+      if (user && db && !isNewUser) {
         try {
-          // Get additional user data from Firestore
+          console.log('Fetching additional user data from Firestore');
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
-            setCurrentUser({ ...user, ...userDoc.data() });
+            const userData = userDoc.data();
+            console.log('User data fetched successfully:', userData);
+            setCurrentUser({ 
+              ...user, 
+              ...userData,
+              profileImage: userData.profileImage || DEFAULT_PROFILE_IMAGE,
+              isAdmin: isAdmin(user)
+            });
           } else {
-            setCurrentUser(user);
+            console.warn('No Firestore document found for user:', user.uid);
+            setCurrentUser({
+              ...user,
+              profileImage: DEFAULT_PROFILE_IMAGE,
+              isAdmin: isAdmin(user)
+            });
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
-          setCurrentUser(user);
+          setCurrentUser({
+            ...user,
+            profileImage: DEFAULT_PROFILE_IMAGE,
+            isAdmin: isAdmin(user)
+          });
         }
-      } else {
+      } else if (!isNewUser) {
+        console.log('No user logged in or new user in signup process');
         setCurrentUser(null);
       }
       setLoading(false);
     });
 
     return unsubscribe;
-  }, []);
+  }, [isNewUser, isAdmin]);
 
   const value = {
     currentUser,
-    signup,
+    validateSignupStep1,
+    completeSignup,
     login,
     logout,
     resetPassword,
     updateProfileImage,
-    loading
+    updateUserData,
+    loading,
+    isNewUser,
+    isAdmin: currentUser ? isAdmin(currentUser) : false
   };
 
   return (
@@ -247,6 +407,8 @@ export function AuthProvider({ children }) {
       {!loading && children}
     </AuthContext.Provider>
   );
-}
+});
+
+AuthProvider.displayName = 'AuthProvider';
 
 export default AuthContext;
