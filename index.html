@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/images/IconOnly_Transparent_NoBuffer%20(1).png" />
+    <link rel="icon" type="image/png" href="/assets/IconOnly_Transparent_NoBuffer%20(1)-Q_DpJRmg-1733462282121.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1f2937" />
     <meta name="description" content="Manage your sports betting bankroll" />
@@ -22,10 +22,24 @@
     <meta name="gcm_sender_id" content="443440711718" />
     
     <title>Bankroll</title>
-    <script type="module" crossorigin src="/assets/main-CWuDghQH.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/main-DHxQh34N.css">
+
+    <!-- Prevent flash of wrong theme -->
+    <script>
+      // Check for saved theme preference or system preference
+      const theme = localStorage.getItem('theme') || 
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      
+      // Apply theme class to html element
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-BRL3oD8D-1733462282121.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DyR2FOll-1733462282121.css">
   </head>
-  <body>
+  <body class="bg-gray-50 dark:bg-gray-900">
     <div id="root"></div>
     <script>
       // Check if service workers are supported
